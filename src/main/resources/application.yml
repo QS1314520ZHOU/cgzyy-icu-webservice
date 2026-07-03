@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: CGZDICUWebservice
+  data:
+    mongodb:
+      smartcare:
+        uri: mongodb://dxm:DB%40dmin@10.35.4.11:32121/SmartCare
+      datacenter:
+        uri: mongodb://data:Data%40dmin@10.35.4.11:32121/DataCenter
+#      host: 10.35.4.12
+#      port: 32121
+#      database: DataCenter
+#      username: data
+#      password: Data@dmin
+#    mongodb:
+#      host: 168.168.168.166
+#      port: 32121
+#      database: ORDB
+#      username: ordb
+#      password: orDB@dmin
+      auto-index-creation: true
+server:
+  port: 8081
+digixmed:
+  #机构编码（医院编码） 用于 多个医院使用同一个服务器
+  jiGou-code: H50010400021
+  # 多个科室编号用、隔开
+  dept-code: 125011
+  isTask: false  # 是否开启自动同步字典相关数据
+  isPatient: true # 是否开启自动患者信息同步
+  isCGZYY: false # 是否是重钢总医院标识 默认不是
+  yhipSender: ICIS
+  deptUrl: /STANDARD/MANAGE/VTB_KSXX/page/V1  # 科室路径
+  staffUrl: /STANDARD/MANAGE/VTB_RYXX_WY/page/V1  # 人员路径
+  freqUrl: /STANDARD/YHYL_PFS_ZSJ_V1/VTB_QY_YPSYPC/page/V1  # 用药频次路径
+  methodUrl: /STANDARD/YHYL_PFS_ZSJ_V1/VTB_ZSJ_YH_YYTJ/page/V1    # 用药方式路径
+  icd10Url: /STANDARD/YHYL_PFS_ZSJ_V1/VTB_ICD10/page/V1    # ICD10路径
+  patientUrl: /STANDARD/yhyl_pfs_zsy/zsy_hzjbxx/page/V1  # 获取患者基本路径
+  #患者请求频率
+  dicti-patient: 0 0/10 * * * ?
+  #字典请求频率
+  dicti-corn: 0 0/10 * * * ?
+  # 字典请求URL
+  urlHead: http://10.35.0.10:9801/yhyl/interaction
+
+  urlPC: http://10.35.0.10:9801/yhyl/interaction
