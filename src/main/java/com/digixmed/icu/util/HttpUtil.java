@@ -59,7 +59,7 @@ public class HttpUtil {
         }
         CloseableHttpClient closeableHttpClient = httpClientBuilder.build();
         HttpPost httpPost = new HttpPost(address);
-        RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(30000).setConnectTimeout(30000).build();
+        RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(3000).setConnectionRequestTimeout(3000).build();
         httpPost.setConfig(requestConfig);
         try {
             try {
@@ -114,8 +114,12 @@ public class HttpUtil {
     }
 
     public static String doPost(String inPut, String url,String yhipSender) {
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("Content-type", "application/json;charset=UTF-8").header("yhip_sender", yhipSender).header("yhip_messageId", UUID.randomUUID().toString()).POST(HttpRequest.BodyPublishers.ofString(inPut)).build();
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(3))
+                .build();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(5))
+                .header("Content-type", "application/json;charset=UTF-8").header("yhip_sender", yhipSender).header("yhip_messageId", UUID.randomUUID().toString()).POST(HttpRequest.BodyPublishers.ofString(inPut)).build();
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
@@ -129,8 +133,12 @@ public class HttpUtil {
         }
     }
     public static String doPostXML(String inPut, String url,String yhipSender) {
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("Content-type", "application/xml")
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(3))
+                .build();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(5))
+                .header("Content-type", "application/xml")
                 .header("yhip_sender", yhipSender).header("Show-Logic-Delete", "1").header("yhip_messageId", UUID.randomUUID().toString()).POST(HttpRequest.BodyPublishers.ofString(inPut)).build();
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

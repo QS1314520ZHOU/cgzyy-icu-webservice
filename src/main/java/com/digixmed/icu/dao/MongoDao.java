@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -425,5 +426,148 @@ public class MongoDao {
 
     public List<Icd10> findICD10All() {
         return this.mongoTemplate.findAll(Icd10.class);
+    }
+
+    /**
+     * 批量 upsert 医嘱 —— 按 orderID 去重，减少单条 IO
+     */
+    public void bulkUpsertOrders(List<Order> orderList) {
+        if (orderList == null || orderList.isEmpty()) {
+            return;
+        }
+        BulkOperations bulkOps = this.mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, Order.class);
+        for (Order order : orderList) {
+            Query query = Query.query(Criteria.where("orderID").is(order.getOrderID()));
+            Update update = new Update();
+            update.set("name", order.getName());
+            update.set("gender", order.getGender());
+            update.set("pid", order.getPid());
+            update.set("mrn", order.getMrn());
+            update.set("orderID", order.getOrderID());
+            update.set("orderType", order.getOrderType());
+            update.set("yaoType", order.getYaoType());
+            update.set("freq", order.getFreq());
+            update.set("dose", order.getDose());
+            update.set("unit", order.getUnit());
+            update.set("exeMethod", order.getExeMethod());
+            update.set("exeMethodCode", order.getExeMethodCode());
+            update.set("orderName", order.getOrderName());
+            update.set("orderYaoCode", order.getOrderYaoCode());
+            update.set("groupID", order.getGroupID());
+            update.set("spec", order.getSpec());
+            update.set("orderTime", order.getOrderTime());
+            update.set("reviewTime", order.getReviewTime());
+            update.set("planTime", order.getPlanTime());
+            update.set("orderDoctorID", order.getOrderDoctorID());
+            update.set("orderDoctor", order.getOrderDoctor());
+            update.set("reviewer", order.getReviewer());
+            update.set("reviewerID", order.getReviewerID());
+            update.set("status", order.getStatus());
+            update.set("stopTime", order.getStopTime());
+            update.set("cancelTime", order.getCancelTime());
+            update.set("notes", order.getNotes());
+            bulkOps.upsert(query, update);
+        }
+        bulkOps.execute();
+        log.info("批量 upsert 医嘱 {} 条", orderList.size());
+    }
+
+    /**
+     * 批量 upsert 检验报告 —— 按 reportID 去重
+     */
+    public void bulkUpsertExams(List<Exam> examList) {
+        if (examList == null || examList.isEmpty()) {
+            return;
+        }
+        BulkOperations bulkOps = this.mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, Exam.class);
+        for (Exam exam : examList) {
+            Query query = Query.query(Criteria.where("reportID").is(exam.getReportID()));
+            Update update = new Update();
+            update.set("hisPid", exam.getHisPid());
+            update.set("reportID", exam.getReportID());
+            update.set("orderID", exam.getOrderID());
+            update.set("code", exam.getCode());
+            update.set("name", exam.getName());
+            update.set("shortName", exam.getShortName());
+            update.set("orderDept", exam.getOrderDept());
+            update.set("orderDeptCode", exam.getOrderDeptCode());
+            update.set("orderDoctor", exam.getOrderDoctor());
+            update.set("specID", exam.getSpecID());
+            update.set("specName", exam.getSpecName());
+            update.set("collectTime", exam.getCollectTime());
+            update.set("recvTime", exam.getRecvTime());
+            update.set("authTime", exam.getAuthTime());
+            update.set("authDoctor", exam.getAuthDoctor());
+            update.set("mrn", exam.getMrn());
+            update.set("patName", exam.getPatName());
+            update.set("gender", exam.getGender());
+            bulkOps.upsert(query, update);
+        }
+        bulkOps.execute();
+        log.info("批量 upsert 检验报告 {} 条", examList.size());
+    }
+
+    /**
+     * 批量 upsert 检验小项 —— 按 examID+itemCode 去重
+     */
+    public void bulkUpsertExamItems(List<ExamItem> itemList) {
+        if (itemList == null || itemList.isEmpty()) {
+            return;
+        }
+        BulkOperations bulkOps = this.mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, ExamItem.class);
+        for (ExamItem item : itemList) {
+            Query query = Query.query(Criteria.where("examID").is(item.getExamID()).and("itemCode").is(item.getItemCode()));
+            Update update = new Update();
+            update.set("hisPid", item.getHisPid());
+            update.set("examID", item.getExamID());
+            update.set("reportID", item.getReportID());
+            update.set("orderID", item.getOrderID());
+            update.set("testItemID", item.getTestItemID());
+            update.set("itemCode", item.getItemCode());
+            update.set("itemName", item.getItemName());
+            update.set("itemShortName", item.getItemShortName());
+            update.set("result", item.getResult());
+            update.set("almFlag", item.getAlmFlag());
+            update.set("resultStatus", item.getResultStatus());
+            update.set("unit", item.getUnit());
+            update.set("reflow", item.getReflow());
+            update.set("refHigh", item.getRefHigh());
+            update.set("seriousLow", item.getSeriousLow());
+            update.set("seriousHigh", item.getSeriousHigh());
+            update.set("seriousFlag", item.getSeriousFlag());
+            update.set("printRange", item.getPrintRange());
+            update.set("notes", item.getNotes());
+            update.set("authDoctor", item.getAuthDoctor());
+            update.set("authTime", item.getAuthTime());
+            bulkOps.upsert(query, update);
+        }
+        bulkOps.execute();
+        log.info("批量 upsert 检验小项 {} 条", itemList.size());
+    }
+
+    /**
+     * 批量 upsert 医嘱执行记录 —— 按 exeId 去重
+     */
+    public void bulkUpsertOrderExecs(List<OrderExecute> execList) {
+        if (execList == null || execList.isEmpty()) {
+            return;
+        }
+        BulkOperations bulkOps = this.mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, OrderExecute.class);
+        for (OrderExecute exec : execList) {
+            Query query = Query.query(Criteria.where("exeId").is(exec.getExeId()));
+            Update update = new Update();
+            update.set("exeId", exec.getExeId());
+            update.set("orderID", exec.getOrderID());
+            update.set("status", exec.getStatus());
+            update.set("planTime", exec.getPlanTime());
+            update.set("checkTime", exec.getCheckTime());
+            update.set("exeTime", exec.getExeTime());
+            update.set("barCode", exec.getBarCode());
+            update.set("speed", exec.getSpeed());
+            update.set("sourceSpeed", exec.getSourceSpeed());
+            bulkOps.upsert(query, update);
+        }
+        bulkOps.execute();
+        log.info("批量 upsert 医嘱执行记录 {} 条", execList.size());
     }
 }
