@@ -75,6 +75,10 @@ public class Patient {
 
     /** 临床诊断时间 */
     private Date clinicalDiagnosisTime;
+    /** 临床诊断 */
+    private String clinicalDiagnosis;
+
+    private List<String> clinicalDiagnosisCodeList;
 
     /** 医保类型 */
     private String insuranceType;
@@ -123,4 +127,5 @@ public class Patient {
     private String dischargedDepartment;
     private String dischargedDepartmentCode;
     private Date icuDischargeTime;
+    private List<PatientOperations> patientOperations;
 }
