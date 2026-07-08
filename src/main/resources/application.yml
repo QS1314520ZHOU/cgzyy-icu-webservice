@@ -39,7 +39,7 @@ digixmed:
   dept-code: 125011
   isTask: false  # 是否开启自动同步字典相关数据
   isPatient: true # 是否开启自动患者信息同步
-  isCGZYY: false # 是否是重钢总医院标识 默认不是
+  isCGZYY: true # 是否是重钢总医院标识 默认不是
   yhipSender: ICIS
   deptUrl: /STANDARD/MANAGE/VTB_KSXX/page/V1  # 科室路径
   staffUrl: /STANDARD/MANAGE/VTB_RYXX_WY/page/V1  # 人员路径

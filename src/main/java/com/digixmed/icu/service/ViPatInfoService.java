@@ -269,6 +269,8 @@ public class ViPatInfoService extends BaseService {
         String zdzt = "";
         String mrn="";
         String zzd="";
+        String bm="";
+        Date tiem=new Date();
         for (Element element : elements) {
             String name = element.attribute("Name").getValue();
             if ("CHZBS".equals(name)) {
@@ -287,8 +289,16 @@ public class ViPatInfoService extends BaseService {
                 mrn = element.attribute("Value").getValue();
                 continue;
             }
-            if("CJBZDLBBM ".equals(name)){
+            if("BZZBZ".equals(name)){
                 zzd = element.attribute("Value").getValue();
+                continue;
+            }
+            if("CJBZDBM".equals(name)){
+                bm = element.attribute("Value").getValue();
+                continue;
+            }
+            if ("DJLRQSJ".equals(element.attribute("Name").getValue())) {
+                tiem = DataUtil.stringToDate(element.attribute("Value").getValue(), "yyyy-MM-dd HH:mm:ss");
                 continue;
             }
         }
@@ -296,6 +306,11 @@ public class ViPatInfoService extends BaseService {
         if (patient == null) {
             return;
         }
+        Patient patient1 = this.mongoDao.findIcuPatien(pid,mrn,List.of("admitted","wait_admitted","wait_discharged"));
+        if (patient1 == null) {
+            return;
+        }
+        List<String> clinicalDiagnosisCodeList = patient1.getClinicalDiagnosisCodeList();
         String diagnose = patient.getDiagnose();
         //取消诊断
         if("0".equals(zdzt)){
@@ -308,30 +323,43 @@ public class ViPatInfoService extends BaseService {
                         .collect(Collectors.joining(";"));     // 重新用 ; 拼接
                 patient.setDiagnose(result);
             }
+            ArrayList<String> strings = new ArrayList<>();
+            if(CollectionUtil.isNotEmpty(clinicalDiagnosisCodeList)){
+                for (String s : clinicalDiagnosisCodeList) {
+                    if(StrUtil.isEmpty(s))continue;
+                    if(s.equals(bm))continue;
+                    strings.add(s);
+                }
+            }
         }else {
             if (StringUtils.isEmpty(diagnose)) {
                 patient.setDiagnose(zd);
             } else {
                 if(!diagnose.contains(zd)){
                     patient.setDiagnose(diagnose + ";" + zd);
-                }else {
-                    if("12".equals(zzd)){
-                        //如果是主诊断
-                        String[] split = diagnose.split(";");
-                        ArrayList<String> strings = new ArrayList<>();
-                        strings.add(zd);
-                        for (int i = 0; i < split.length; i++) {
-                            String s = split[i];
-                            if(zd.equals(s))continue;
-                            strings.add(s);
-                        }
-                        patient.setDiagnose(strings.stream().collect(Collectors.joining(";")));
-                    }else {
-                        //排序 todo 先不做科室需要在说
+                }
+                diagnose=patient.getDiagnose();
+                if("true".equals(zzd)){
+                    //如果是主诊断
+                    String[] split = diagnose.split(";");
+                    ArrayList<String> strings = new ArrayList<>();
+                    strings.add(zd);
+                    for (int i = 0; i < split.length; i++) {
+                        String s = split[i];
+                        if(zd.equals(s))continue;
+                        strings.add(s);
                     }
+                    patient.setDiagnose(strings.stream().collect(Collectors.joining(";")));
+                }else {
+                    //排序 todo 先不做科室需要在说
                 }
 
+
             }
+            if(CollectionUtil.isEmpty(clinicalDiagnosisCodeList)){
+                clinicalDiagnosisCodeList=new ArrayList<>();
+            }
+            clinicalDiagnosisCodeList.add(bm);
         }
         this.mongoDao.save(patient);
         InHospitalInfo inHospitalInfo = this.mongoDao.getIcuPatientInfoByPid(pid,mrn);
@@ -340,6 +368,12 @@ public class ViPatInfoService extends BaseService {
         }
         inHospitalInfo.setDiagnose(patient.getDiagnose());
         this.mongoDao.save(inHospitalInfo);
+        if(isCGZYY){
+            patient1.setClinicalDiagnosisCodeList(clinicalDiagnosisCodeList);
+            patient1.setClinicalDiagnosis(patient.getDiagnose());
+            patient1.setClinicalDiagnosisTime(tiem);
+            this.mongoDao.savePatient(patient1);
+        }
     }
 
     public void transferDeptOrBed(Element bodyElement, List<String> deptCodeList) throws Exception {
@@ -666,24 +700,82 @@ public class ViPatInfoService extends BaseService {
             changeBed(patient);
             this.mongoDao.save(patient);
         }
-        //todo 看不需要内网平台同步，直接接口同步床号
-        Patient admittedPatient = this.mongoDao.findAdmittedPatient(mrn,List.of("admitted","wait_admitted"));
-        if(admittedPatient!=null){
-            if ("5".equals(bedStaus)) {
-                admittedPatient.setHisBed("");
-            }else {
-                PatBedHistorie patBedHistorie = new PatBedHistorie();
-                patBedHistorie.setHisBed(admittedPatient.getHisBed());
-                patBedHistorie.setTime(admittedPatient.getBedTime());
-                admittedPatient.setHisBed(bedCode);
-                admittedPatient.setBedTime(tiem);
-                List<PatBedHistorie> patBedHistories = admittedPatient.getPatBedHistories();
-                if(CollectionUtil.isEmpty(patBedHistories)){
-                    patBedHistories=new ArrayList<>();
+        if(isCGZYY){
+            //todo 看不需要内网平台同步，直接接口同步床号
+            Patient admittedPatient = this.mongoDao.findAdmittedPatient(mrn,List.of("admitted","wait_admitted"));
+            if(admittedPatient!=null){
+                if ("5".equals(bedStaus)) {
+                    admittedPatient.setHisBed("");
+                }else {
+                    PatBedHistorie patBedHistorie = new PatBedHistorie();
+                    patBedHistorie.setHisBed(admittedPatient.getHisBed());
+                    patBedHistorie.setTime(admittedPatient.getBedTime());
+                    admittedPatient.setHisBed(bedCode);
+                    admittedPatient.setBedTime(tiem);
+                    List<PatBedHistorie> patBedHistories = admittedPatient.getPatBedHistories();
+                    if(CollectionUtil.isEmpty(patBedHistories)){
+                        patBedHistories=new ArrayList<>();
+                    }
+                    patBedHistories.add(patBedHistorie);
+                    admittedPatient.setPatBedHistories(patBedHistories);
                 }
-                patBedHistories.add(patBedHistorie);
+                this.mongoDao.savePatient(admittedPatient);
             }
-            this.mongoDao.savePatient(admittedPatient);
         }
+    }
+
+    public void handleSyOperations(Element bodyElement, List<String> deptCodeList)throws Exception {
+        List<Element> elements = bodyElement.elements("Field");
+        if (CollectionUtils.isEmpty(elements)) {
+            return;
+        }
+        String pid = null;
+        String operName = "";
+        String mrn = "";
+        Date stiem=new Date();
+        Date etiem=new Date();
+        for (Element element : elements) {
+            String name = element.attribute("Name").getValue();
+            if ("CHZBS".equals(name)) {
+                pid = element.attribute("Value").getValue();
+                continue;
+            }
+            if ("CSS_CZMC".equals(name)) {
+                operName = element.attribute("Value").getValue();
+                continue;
+            }
+            if ("CJZH".equals(element.attribute("Name").getValue())) {
+                mrn = element.attribute("Value").getValue();
+                continue;
+            }
+            if ("DRSSSSJ".equals(element.attribute("Name").getValue())) {
+                stiem = DataUtil.stringToDate(element.attribute("Value").getValue(), "yyyy-MM-dd HH:mm:ss");
+                continue;
+            }
+            if ("DCSSSSJ".equals(element.attribute("Name").getValue())) {
+                etiem = DataUtil.stringToDate(element.attribute("Value").getValue(), "yyyy-MM-dd HH:mm:ss");
+                continue;
+            }
+
+        }
+        PatientInfo patient = this.mongoDao.getPatientInfoByPid(pid,mrn);
+        if (patient == null) {
+            throw new Exception("未找到"+pid+"该病人的住院信息");
+        }
+        Patient icuPatien = this.mongoDao.findIcuPatien(pid, mrn, List.of("admitted", "wait_admitted", "wait_discharged"));
+        if (icuPatien == null) {
+            throw new Exception("未找到"+pid+"该病人入ICU的信息");
+        }
+        PatientOperations patientOperations = new PatientOperations();
+        patientOperations.setEndTime(etiem);
+        patientOperations.setStartTime(stiem);
+        patientOperations.setName(operName);
+        List<PatientOperations> patientOperations1 = icuPatien.getPatientOperations();
+        if(CollectionUtil.isEmpty(patientOperations1)){
+            patientOperations1=new ArrayList<>();
+        }
+        patientOperations1.add(patientOperations);
+        icuPatien.setPatientOperations(patientOperations1);
+        this.mongoDao.savePatient(icuPatien);
     }
 }

@@ -65,6 +65,11 @@ public class DataHandlerService {
                 this.examService.handleReport(messageData.getRootElement().element("Message"), deptCodeList);
                 return getReturnResult(messageId, status, message);
             }
+            //危急值
+            if ("ylzl_wjzdj".equals(serviceCode)) {
+                this.examService.handleReportWJZDJ(messageData.getRootElement().element("Message"), deptCodeList);
+                return getReturnResult(messageId, status, message);
+            }
             bodyElement = messageData.getRootElement().element("Message").element("Component").element("Entry");
             switch (serviceCode) {
                 case "zy_rydj":
@@ -97,10 +102,14 @@ public class DataHandlerService {
                     log.info("医嘱开始同步");
                     this.orderService.handleOrder(bodyElement);
                     break;
-                case "ZY_YZZTGXJL":
+                case "zy_yzztgxjl":
                     //根本没用
                     log.info("医嘱状态更新");
                     this.orderService.handleOrderStateChange(bodyElement);
+                    break;
+                case "sm_ssjl":
+                    log.info("手术信息同步");
+                    this.patientInfoService.handleSyOperations(bodyElement, deptCodeList);
                     break;
             }
         } catch (Exception e) {

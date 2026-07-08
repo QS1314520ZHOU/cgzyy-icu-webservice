@@ -576,4 +576,115 @@ public class ExamService extends BaseService {
         }
 
     }
+
+    public void handleReportWJZDJ(Element message, List<String> deptCodeList) {
+        List<Element> examRequest = message.elements("Component");
+        if (CollectionUtils.isEmpty(examRequest)) {
+            log.error("危急值数据异常");
+            return;
+        }
+        String pid = null;
+        String status = "";
+        String id = "";
+        VIICUEMERG viicuemerg = new VIICUEMERG();
+        for (Element element : examRequest) {
+            String ComponentName = element.attribute("Name").getValue();
+            if (StrUtil.isEmpty(ComponentName)) continue;
+            ComponentName = ComponentName.toLowerCase();
+            if ("tb_ylzl_wjzdj".equals(ComponentName)) {
+                List<Element> elements = element.element("Entry").elements("Field");
+                for (Element entry : elements) {
+                    String name = entry.attribute("Name").getValue();
+                    String value = entry.attribute("Value").getValue();
+                    if (StrUtil.isBlank(value) || value.contains("NULL")) continue;
+                    switch (name) {
+                        case "CHZBS":
+                            pid = value;
+                            viicuemerg.setHisPid(pid);
+                            break;
+                        case "CBQDM":
+                            if (!deptCodeList.contains(value)) {
+                                return;
+                            }
+                            viicuemerg.setDeptCode(value);
+                            break;
+                        case "CBQMC":
+                            viicuemerg.setDeptName(value);
+                            break;
+                        case "CJCJYBGDH":
+                            viicuemerg.setDataID(value);
+                            viicuemerg.setTestItemID(value);
+                            viicuemerg.setOrderID(value);
+                            id=value;
+                            break;
+                        case "CHZXM":
+                           viicuemerg.setPatName(value);
+                            break;
+                        case "DBGRQSJ":
+                            viicuemerg.setRepTime(DataUtil.stringToDate(value, "yyyy-MM-dd HH:mm:ss"));
+                            break;
+                        case "CJYGS":
+                            viicuemerg.setMsg(value);
+                            break;
+                        case "CJCXMMC":
+                           viicuemerg.setBigItemName(value);
+                            break;
+                        case "BSJZT":
+                            status = value;
+                            break;
+                        case "CWJZZTDM":
+                            viicuemerg.setSeriousFlag(value);
+                            break;
+                        case "CFXYSXM":
+                            viicuemerg.setReqName(value);
+                            break;
+                        case "CFXYSBM":
+                            viicuemerg.setReqDr(value);
+                            break;
+                    }
+                }
+            }
+            if ("tb_ylzl_wjzdjmx".equals(ComponentName)) {
+                List<Element> elements = element.element("Entry").elements("Field");
+                for (Element entry : elements) {
+                    String name = entry.attribute("Name").getValue();
+                    String value = entry.attribute("Value").getValue();
+                    if (StrUtil.isBlank(value) || value.contains("NULL")) continue;
+                    switch (name) {
+                        case "CWJZJCJG":
+                            viicuemerg.setResult(value);
+                            break;
+                        case "CWJZJCXMMC":
+                            viicuemerg.setItemName(value);
+                            break;
+                        case "CWJZXX":
+                            viicuemerg.setSeriousLow(value);
+                            break;
+                        case "CWJZSX":
+                            viicuemerg.setSeriousHigh(value);
+                            break;
+                    }
+                }
+            }
+        }
+        if (pid == null) {
+            return;
+        }
+        InHospitalInfo patient = this.mongoDao.findIcuPatientInfoByPid(pid);
+        if (patient == null) {
+            return;
+        }
+        VIICUEMERG viicuemerg1 = this.mongoDao.findVIICUEMERG(pid, id);
+        if("1".equals(status)){
+            if(viicuemerg1!=null){
+                viicuemerg.setId(viicuemerg1.getId());
+            }
+            this.mongoDao.save(viicuemerg);
+
+        }else {
+            if(viicuemerg1!=null){
+                this.mongoDao.deleteVIICUEMERG(viicuemerg1.getId());
+            }
+        }
+    }
 }

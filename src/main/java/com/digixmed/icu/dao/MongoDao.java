@@ -356,8 +356,8 @@ public class MongoDao {
         return this.smongoTemplate.findOne(Query.query(criteria), Patient.class);
     }
 
-    public Patient findIcuPatien(String hisPid) {
-        return this.mongoTemplate.findOne(Query.query(Criteria.where("status").is("admitted").and("hisPid").is(hisPid)), Patient.class);
+    public Patient findIcuPatien(String hisPid,String mrn,List<String> status) {
+        return this.smongoTemplate.findOne(Query.query(Criteria.where("status").in(status).and("hisPid").is(hisPid).and("mrn").is(mrn)), Patient.class);
     }
 
     public Patient savePatient(Patient patient) {
@@ -569,5 +569,15 @@ public class MongoDao {
         }
         bulkOps.execute();
         log.info("批量 upsert 医嘱执行记录 {} 条", execList.size());
+    }
+
+    public VIICUEMERG findVIICUEMERG(String pid, String orderId) {
+        Criteria criteria = Criteria.where("hisPid").is(pid).and("dataID").is(orderId);
+        return this.mongoTemplate.findOne(Query.query(criteria), VIICUEMERG.class);
+    }
+
+    public void deleteVIICUEMERG(String id) {
+        Criteria criteria = Criteria.where("_id").is(id);
+        this.mongoTemplate.remove(Query.query(criteria), VIICUEMERG.class);
     }
 }
