@@ -748,11 +748,11 @@ public class ViPatInfoService extends BaseService {
                 mrn = element.attribute("Value").getValue();
                 continue;
             }
-            if ("DRSSSSJ".equals(element.attribute("Name").getValue())) {
+            if ("DSSKSSJ".equals(element.attribute("Name").getValue())) {
                 stiem = DataUtil.stringToDate(element.attribute("Value").getValue(), "yyyy-MM-dd HH:mm:ss");
                 continue;
             }
-            if ("DCSSSSJ".equals(element.attribute("Name").getValue())) {
+            if ("DSSJSSJ".equals(element.attribute("Name").getValue())) {
                 etiem = DataUtil.stringToDate(element.attribute("Value").getValue(), "yyyy-MM-dd HH:mm:ss");
                 continue;
             }

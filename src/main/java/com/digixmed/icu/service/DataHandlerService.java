@@ -1,9 +1,9 @@
 package com.digixmed.icu.service;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
+import com.digixmed.icu.util.YhylResponseUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
@@ -121,7 +121,7 @@ public class DataHandlerService {
     }
 
     private String getReturnResult(String messageId, String status, String message) {
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<YHYL MessageId=\"" + messageId + "\">\n\t<Result createTime=\"" + new Date().getTime() + "\" message=\"" + message + "\" status=\"" + status + "\"/>\n</YHYL>\n";
+        return YhylResponseUtil.buildYhylResponse(messageId, status, status, message);
     }
 
     public List<String> getDeptCodeList() {
